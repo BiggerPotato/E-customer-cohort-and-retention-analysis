@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f8ff">
+  <title>Retention Studio · Customer Analytics</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    /* Predictable, responsive chart sizing. */
+    .chart-wrap{position:relative;width:100%;height:clamp(220px,28vw,310px);overflow:hidden}
+    .chart-wrap canvas{display:block;width:100%!important;height:100%!important;max-width:100%}
+    .heatmap-wrap{width:100%;height:auto;min-height:220px;max-height:320px;overflow:auto;align-items:flex-start}
+    .heatmap{width:max-content;min-width:100%;table-layout:auto}
+    .image-wrap{width:100%;min-width:0;overflow:hidden}
+    .image-wrap img{display:block;width:100%;height:auto;max-height:290px;object-fit:contain;object-position:center}
+    .tests-panel{margin-top:14px}.test-summary{margin:18px 0 8px;color:#7889a1;font-size:12px}
+    .test-results{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+    .test-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 13px;border:1px solid #e7edf5;border-radius:8px;background:#fbfcfe;min-width:0}
+    .test-name{font:500 11px ui-monospace,SFMono-Regular,Consolas,monospace;overflow-wrap:anywhere;color:#465b78}
+    .test-badge{flex:none;border-radius:20px;padding:4px 8px;font-size:9px;font-weight:700;letter-spacing:.4px}
+    .test-badge.pass{color:#148365;background:#e7f7f0}.test-badge.fail{color:#b84343;background:#fff0ef}.test-badge.skip{color:#8b6a22;background:#fff7e5}
+    .test-error{grid-column:1/-1;padding:12px;border-radius:8px;color:#965c26;background:#fff5e9;font-size:11px;white-space:pre-wrap;overflow-wrap:anywhere}
+    .test-loading{display:flex;align-items:center;gap:9px;color:#8190a5;font-size:12px}.test-loading:before{content:'';width:13px;height:13px;border:2px solid #dbe5f2;border-top-color:#3977e8;border-radius:50%;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+    .test-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.test-actions .refresh{font-size:11px}
+    .artifact-links{display:flex;align-items:center;gap:11px;flex-wrap:wrap;border-top:1px solid #edf1f6;margin-top:17px;padding-top:13px}.artifact-links span{font-size:9px;letter-spacing:.8px;color:#96a3b4;font-weight:700}.artifact-links a{font-size:10px;color:#3977e8;text-decoration:none}.artifact-links a:hover{text-decoration:underline}.automation-note{font-size:10px;color:#8795a9;margin:11px 0 0}.automation-note code{background:#f2f5f9;padding:3px 5px;border-radius:4px;color:#526987}
+    @media(max-width:700px){.test-results{grid-template-columns:1fr}.chart-wrap{height:250px}}
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <a class="brand" href="#overview"><span class="brand-mark">R</span><span>retention<span class="brand-light">studio</span></span></a>
+      <div class="side-label">WORKSPACE</div>
+      <a class="side-link active" href="#overview"><span>▦</span> Overview</a>
+      <a class="side-link" href="#trends"><span>⌁</span> Trends & cohorts</a>
+      <a class="side-link" href="#tests"><span>✓</span> Testing &amp; QA</a>
+      <a class="side-link" href="#about"><span>ⓘ</span> About this project</a>
+      <div class="side-bottom"><div class="pulse"></div><div><b>Analysis ready</b><small>Local project data</small></div></div>
+    </aside>
+
+    <main class="main" id="overview">
+      <header class="topbar"><div class="crumb">ANALYTICS <span>/</span> CUSTOMER RETENTION</div><div class="top-right"><span class="live-dot"></span><span>Project dashboard</span><div class="avatar">CS</div></div></header>
+      <section class="hero">
+        <div><div class="eyebrow"><span class="sparkle">✦</span> CUSTOMER INTELLIGENCE</div><h1>Retention, made <em>clear.</em></h1><p>Explore repeat buying, monthly revenue, and how customer cohorts return over time.</p></div>
+        <button class="refresh" id="refresh"><span>↻</span> Refresh data</button>
+      </section>
+      <div class="notice" id="status"><span class="notice-icon">i</span><span>Loading project CSV files…</span></div>
+
+      <section class="metrics" aria-label="Key metrics">
+        <article class="metric"><div class="metric-head"><span>Valid orders</span><span class="metric-icon blue">▤</span></div><div class="metric-value" id="orders">—</div><div class="metric-foot">Completed orders in the dataset</div></article>
+        <article class="metric"><div class="metric-head"><span>Unique customers</span><span class="metric-icon violet">♙</span></div><div class="metric-value" id="customers">—</div><div class="metric-foot">Distinct customer accounts</div></article>
+        <article class="metric"><div class="metric-head"><span>Repeat customers</span><span class="metric-icon teal">↗</span></div><div class="metric-value" id="repeat">—</div><div class="metric-foot" id="repeat-foot">Customers with multiple orders</div></article>
+        <article class="metric"><div class="metric-head"><span>Repeat rate</span><span class="metric-icon gold">◷</span></div><div class="metric-value" id="rate">—</div><div class="metric-foot">Share of customers who returned</div></article>
+        <article class="metric"><div class="metric-head"><span>Average order value</span><span class="metric-icon blue">＄</span></div><div class="metric-value" id="aov">—</div><div class="metric-foot">Revenue per valid order</div></article>
+        <article class="metric"><div class="metric-head"><span>Total revenue</span><span class="metric-icon teal">⌁</span></div><div class="metric-value" id="revenue">—</div><div class="metric-foot">Across the observed period</div></article>
+        <article class="metric metric-wide"><div class="metric-head"><span>Median days between orders</span><span class="metric-icon violet">◷</span></div><div class="metric-value" id="days">—</div><div class="metric-foot">Typical gap before a customer’s next purchase</div></article>
+      </section>
+
+      <section class="section-heading" id="trends"><div><div class="eyebrow">YOUR DATA, AT A GLANCE</div><h2>Trends & cohorts</h2></div><div class="legend"><span class="legend-dot"></span> Revenue</div></section>
+      <section class="chart-grid">
+        <article class="panel revenue-panel"><div class="panel-top"><div><h3>Monthly revenue</h3><p>Revenue over time</p></div><span class="panel-tag">MONTHLY</span></div><div class="chart-wrap"><canvas id="revenueChart" aria-label="Monthly revenue chart"></canvas></div><div class="chart-label" id="revenue-empty">Waiting for monthly summary…</div></article>
+        <article class="panel cohort-panel"><div class="panel-top"><div><h3>Cohort retention</h3><p>Repeat activity by first-purchase month</p></div><span class="panel-tag">RETENTION</span></div><div class="heatmap-wrap" id="heatmap"><div class="empty-chart">Waiting for cohort data…</div></div><div class="heat-legend"><span>Lower</span><span class="heat-gradient"></span><span>Higher</span></div></article>
+      </section>
+      <section class="panel gap-panel"><div class="panel-top"><div><h3>Days between orders</h3><p>Explore the existing analysis view</p></div><span class="panel-tag">ORDER INTERVAL</span></div><div class="gap-content"><div class="gap-callout"><span class="metric-icon violet">◷</span><div><small>MEDIAN INTERVAL</small><strong id="days-callout">—</strong><p>Days between a customer's consecutive orders</p></div></div><div class="image-wrap" id="gap-image"><div class="empty-chart">If available, the existing analysis chart will appear here.</div></div></div></section>
+
+      <section class="panel tests-panel" id="tests"><div class="panel-top"><div><div class="eyebrow">PROJECT QUALITY</div><h3>Automated test cases</h3><p>Run the Python suite or the Playwright browser checks and review each result here.</p></div><div class="test-actions"><button class="refresh" id="run-tests">▶ &nbsp;Run Python tests</button><button class="refresh" id="run-browser-tests">◉ &nbsp;Run browser tests</button></div></div><div class="test-summary" id="test-summary">Tests have not been run in this session.</div><div id="test-results" class="test-results"><div class="empty-chart">Choose a test suite to see individual results.</div></div><div class="artifact-links"><span>ASSESSMENT ARTIFACTS</span><a href="TEST_PLAN.md" target="_blank">Test Plan</a><a href="TEST_CASES.md" target="_blank">Test Cases</a><a href="BUG_REPORT.md" target="_blank">Bug Report</a><a href="RTM.md" target="_blank">RTM</a><a href="TEST_SUMMARY.md" target="_blank">Test Summary</a><a href="CODE_ANALYSIS.md" target="_blank">Code Analysis</a></div><p class="automation-note">Playwright demo: <code>python -m unittest -v test_dashboard_browser</code></p></section>
+      <section class="info-grid" id="about"><article class="info-card"><div class="info-icon">✧</div><div><h3>About the data</h3><p>This dashboard reads <code>monthly_summary.csv</code> and <code>cohort_retention.csv</code> from the project folder. Metrics are calculated from the available summary data; detailed customer and order measures need source order records.</p></div></article><article class="info-card"><div class="info-icon limit">◎</div><div><h3>Limitations</h3><p>This analysis describes observed behavior. It does not prove why customers return or establish cause and effect. Blank cohort periods mean there is no later-period data for that cohort.</p></div></article></section>
+      <footer><span>RETENTION STUDIO</span><span>Built for a clear view of customer behavior</span></footer>
+    </main>
+  </div>
+  <script src="script.js?v=20261109-chart-fix"></script>
+</body>
+</html>
